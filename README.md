@@ -147,12 +147,13 @@ Generate documentation locally:
 
 ```bash
 $ swift package generate-documentation --target SwiftLLDP \
-    --output-path Docs --transform-for-static-hosting
+    --output-path Docs --transform-for-static-hosting \
+    --hosting-base-path SwiftLLDP
 ```
 
-Open `Docs/index.html` in a browser to explore the rendered reference. The
-package and CLI source is extensively documented with doc comments so symbol
-documentation appears in Xcode and the DocC archive.
+Open `Docs/index.html` in a browser to explore the rendered reference. GitHub
+Actions also publishes the DocC archive to
+https://network-weather.github.io/SwiftLLDP/ on each push to `main`.
 
 ---
 
