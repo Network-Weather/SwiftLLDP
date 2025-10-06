@@ -1,0 +1,374 @@
+{
+  "description": "A machine-readable structure for parsing LLDP and LLDP-MED TLVs based on ANSI/TIA-1057.",
+  "lldpdu_structure": "A sequence of TLVs, where each TLV is defined in the tlv_registry. The sequence must end with the 'End of LLDPDU' TLV (Type 0).",
+  "tlv_registry": [
+    {
+      "type": 0,
+      "name": "End of LLDPDU",
+      "reference": "IEEE 802.1AB",
+      "description": "Marks the end of the LLDPDU. The length and value fields are zero and are omitted. [cite: 373, 392]",
+      "structure": []
+    },
+    {
+      "type": 1,
+      "name": "Chassis ID",
+      "reference": "IEEE 802.1AB",
+      "description": "Identifies the chassis of the sending device. [cite: 369]",
+      "structure": [
+        {
+          "name": "subtype",
+          "size_bits": 8,
+          "data_type": "enum",
+          "description": "The type of Chassis ID provided. For LLDP-MED Network Connectivity Devices, this shall default to 4 (MAC address). For LLDP-MED Endpoint Devices, this shall default to 5 (Network address). [cite: 844, 845]"
+        },
+        {
+          "name": "chassis_id",
+          "size_bits": "variable",
+          "data_type": "string",
+          "description": "The identifier for the chassis, formatted according to the subtype."
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "name": "Port ID",
+      "reference": "IEEE 802.1AB",
+      "description": "Identifies the port that transmitted the LLDP frame. [cite: 370]",
+      "structure": [
+        {
+          "name": "subtype",
+          "size_bits": 8,
+          "data_type": "enum",
+          "description": "The type of Port ID provided. For all LLDP-MED devices, this shall default to 3 (MAC address). [cite: 851, 853]"
+        },
+        {
+          "name": "port_id",
+          "size_bits": "variable",
+          "data_type": "string",
+          "description": "The identifier for the port, formatted according to the subtype."
+        }
+      ]
+    },
+    {
+      "type": 3,
+      "name": "Time To Live",
+      "reference": "IEEE 802.1AB",
+      "description": "Indicates how long information in the received LLDPDU should be considered valid. [cite: 371, 391]",
+      "structure": [
+        {
+          "name": "seconds",
+          "size_bits": 16,
+          "data_type": "integer",
+          "description": "The time-to-live value in seconds."
+        }
+      ]
+    },
+    {
+      "type": 7,
+      "name": "System Capabilities",
+      "reference": "IEEE 802.1AB",
+      "description": "Identifies the primary functions of the system and which are enabled. [cite: 783]",
+      "structure": [
+        {
+          "name": "system_capabilities",
+          "size_bits": 16,
+          "data_type": "bitmap",
+          "description": "A bitmap of the system's capabilities. [cite: 800]",
+          "bits": {
+            "0": "Other",
+            "1": "Repeater",
+            "2": "Bridge",
+            "3": "WLAN Access Point",
+            "4": "Router",
+            "5": "Telephone",
+            "6": "DOCSIS Cable Device",
+            "7": "Station Only"
+          }
+        },
+        {
+          "name": "enabled_capabilities",
+          "size_bits": 16,
+          "data_type": "bitmap",
+          "description": "A bitmap of the currently enabled capabilities. [cite: 810]",
+          "bits": {
+            "0": "Other",
+            "1": "Repeater",
+            "2": "Bridge",
+            "3": "WLAN Access Point",
+            "4": "Router",
+            "5": "Telephone",
+            "6": "DOCSIS Cable Device",
+            "7": "Station Only"
+          }
+        }
+      ]
+    },
+    {
+      "type": 127,
+      "name": "Organizationally Specific",
+      "description": "Container for custom TLVs defined by organizations like TIA. [cite: 444]",
+      "structure": [
+        {
+          "name": "oui",
+          "size_bits": 24,
+          "data_type": "hex",
+          "description": "Organizationally Unique Identifier. For LLDP-MED, this is 00-12-BB. [cite: 876]"
+        },
+        {
+          "name": "subtype",
+          "size_bits": 8,
+          "data_type": "integer",
+          "description": "The organization-defined subtype for the TLV."
+        },
+        {
+          "name": "data",
+          "size_bits": "variable",
+          "data_type": "sub_tlv",
+          "description": "The payload, which is parsed based on the OUI and subtype."
+        }
+      ],
+      "sub_tlv_registry": [
+        {
+          "oui": "00-12-BB",
+          "organization": "TIA",
+          "tlvs": [
+            {
+              "subtype": 1,
+              "name": "LLDP-MED Capabilities",
+              "description": "Identifies the LLDP-MED capabilities and device class of the sender. [cite: 958]",
+              "structure": [
+                {
+                  "name": "capabilities",
+                  "size_bits": 16,
+                  "data_type": "bitmap",
+                  "description": "Bitmap of the supported LLDP-MED capabilities. [cite: 981]",
+                  "bits": {
+                    "0": "LLDP-MED Capabilities",
+                    "1": "Network Policy",
+                    "2": "Location Identification",
+                    "3": "Extended Power via MDI - PSE",
+                    "4": "Extended Power via MDI - PD",
+                    "5": "Inventory"
+                  }
+                },
+                {
+                  "name": "device_type",
+                  "size_bits": 8,
+                  "data_type": "enum",
+                  "description": "The LLDP-MED class of the device. [cite: 995]",
+                  "values": {
+                    "1": "Endpoint Class I",
+                    "2": "Endpoint Class II",
+                    "3": "Endpoint Class III",
+                    "4": "Network Connectivity"
+                  }
+                }
+              ]
+            },
+            {
+              "subtype": 2,
+              "name": "Network Policy",
+              "description": "Advertises VLAN configuration and associated Layer 2/3 attributes for specific applications. [cite: 1005]",
+              "structure": [
+                {
+                  "name": "application_type",
+                  "size_bits": 8,
+                  "data_type": "enum",
+                  "description": "The primary function of the application for this policy. [cite: 1037]",
+                  "values": {
+                    "1": "Voice",
+                    "2": "Voice Signaling",
+                    "3": "Guest Voice",
+                    "4": "Guest Voice Signaling",
+                    "5": "Softphone Voice",
+                    "6": "Video Conferencing",
+                    "7": "Streaming Video",
+                    "8": "Video Signaling"
+                  }
+                },
+                {
+                  "name": "flags",
+                  "size_bits": 3,
+                  "data_type": "bitmap",
+                  "description": "Control flags for the policy.",
+                  "bits": {
+                    "0": "Unknown Policy Flag (U)",
+                    "1": "Tagged Flag (T)",
+                    "2": "Reserved (X)"
+                  }
+                },
+                {
+                  "name": "vlan_id",
+                  "size_bits": 12,
+                  "data_type": "integer",
+                  "description": "VLAN ID (0 for priority tagged). [cite: 1085]"
+                },
+                {
+                  "name": "l2_priority",
+                  "size_bits": 3,
+                  "data_type": "integer",
+                  "description": "Layer 2 priority (0-7). [cite: 1097]"
+                },
+                {
+                  "name": "dscp_value",
+                  "size_bits": 6,
+                  "data_type": "integer",
+                  "description": "DSCP value (0-63). [cite: 1102]"
+                }
+              ]
+            },
+            {
+              "subtype": 3,
+              "name": "Location Identification",
+              "description": "Advertises location information, often for Emergency Call Service. [cite: 1122]",
+              "structure": [
+                {
+                  "name": "location_data_format",
+                  "size_bits": 8,
+                  "data_type": "enum",
+                  "description": "The format of the location data payload. [cite: 1159]",
+                  "values": {
+                    "1": "Coordinate-based LCI",
+                    "2": "Civic Address LCI",
+                    "3": "ECS ELIN"
+                  }
+                },
+                {
+                  "name": "location_id",
+                  "size_bits": "variable",
+                  "data_type": "string",
+                  "description": "The location data payload, parsed according to the format."
+                }
+              ]
+            },
+            {
+              "subtype": 4,
+              "name": "Extended Power-via-MDI",
+              "description": "Enables advanced power management. [cite: 1259]",
+              "structure": [
+                {
+                  "name": "power_type",
+                  "size_bits": 2,
+                  "data_type": "enum",
+                  "description": "Whether the device is a PD (Powered Device) or PSE (Power Sourcing Entity). [cite: 1290]",
+                  "values": {
+                    "0": "PSE Device",
+                    "1": "PD Device"
+                  }
+                },
+                {
+                  "name": "power_source",
+                  "size_bits": 2,
+                  "data_type": "enum",
+                  "description": "The power source being utilized. [cite: 1296]"
+                },
+                {
+                  "name": "power_priority",
+                  "size_bits": 4,
+                  "data_type": "enum",
+                  "description": "The power priority of the device or port. [cite: 1310]",
+                   "values": {
+                    "0": "Unknown",
+                    "1": "Critical",
+                    "2": "High",
+                    "3": "Low"
+                  }
+                },
+                {
+                  "name": "power_value",
+                  "size_bits": 16,
+                  "data_type": "integer",
+                  "description": "The power required (PD) or available (PSE) in tenths of a Watt. [cite: 1330]"
+                }
+              ]
+            },
+            {
+              "subtype": 5,
+              "name": "Inventory - Hardware Revision",
+              "description": "An alphanumeric string for the hardware revision of the endpoint. [cite: 1413]",
+              "structure": [
+                {
+                  "name": "hardware_revision",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 6,
+              "name": "Inventory - Firmware Revision",
+              "description": "An alphanumeric string for the firmware revision of the endpoint. [cite: 1445]",
+               "structure": [
+                {
+                  "name": "firmware_revision",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 7,
+              "name": "Inventory - Software Revision",
+              "description": "An alphanumeric string for the software revision of the endpoint. [cite: 1473]",
+               "structure": [
+                {
+                  "name": "software_revision",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 8,
+              "name": "Inventory - Serial Number",
+              "description": "An alphanumeric string for the serial number of the endpoint. [cite: 1504]",
+               "structure": [
+                {
+                  "name": "serial_number",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 9,
+              "name": "Inventory - Manufacturer Name",
+              "description": "An alphanumeric string for the manufacturer name of the endpoint. [cite: 1534]",
+               "structure": [
+                {
+                  "name": "manufacturer_name",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 10,
+              "name": "Inventory - Model Name",
+              "description": "An alphanumeric string for the model name of the endpoint. [cite: 1562]",
+               "structure": [
+                {
+                  "name": "model_name",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            },
+            {
+              "subtype": 11,
+              "name": "Inventory - Asset ID",
+              "description": "An alphanumeric string for the asset ID of the endpoint. [cite: 1593]",
+               "structure": [
+                {
+                  "name": "asset_id",
+                  "size_bits": "variable",
+                  "data_type": "string"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

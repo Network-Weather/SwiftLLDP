@@ -3,11 +3,12 @@
 SwiftLLDP is split into three main layers:
 
 1. **Model Layer (`Sources/SwiftLLDP/Model/`)** – Defines lightweight, Codable
-   value types for TLVs and neighbors. The option set of capabilities mirrors
-   IEEE 802.1AB bit positions.
+   value types for TLVs, including organizationally specific TLVs, and neighbors.
+   The option set of capabilities mirrors IEEE 802.1AB bit positions.
 2. **Parsing Layer (`Sources/SwiftLLDP/Parsing/`)** – Implements a streaming TLV
-   parser (`LLDPParser`) on top of a simple `ByteReader` helper and gracefully
-   handles malformed frames.
+   parser (`LLDPParser`) on top of a simple `ByteReader` helper, gracefully handles
+   malformed frames, and upgrades LLDP-MED organizational TLVs into structured
+   payloads.
 3. **Capture Layer (`Sources/SwiftLLDP/Capture/`)** – Wraps libpcap to open a BPF
    device, apply an LLDP filter, and convert captured frames into payloads for
    the parser. The capture layer deduplicates neighbors by chassis and port ID

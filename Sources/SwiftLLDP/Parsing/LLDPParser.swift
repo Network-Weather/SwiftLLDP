@@ -35,6 +35,7 @@ public struct LLDPParser {
     var systemCapabilities: LLDPCapabilities?
     var enabledCapabilities: LLDPCapabilities?
     var managementAddresses: [LLDPManagementAddress] = []
+    var organizationalTLVs: [LLDPOrganizationalTLV] = []
     var customTLVs: [LLDPTLV] = []
 
     for tlv in tlvs {
@@ -62,7 +63,7 @@ public struct LLDPParser {
           managementAddresses.append(address)
         }
       case .organizationallySpecific:
-        customTLVs.append(tlv)
+        organizationalTLVs.append(try decodeOrganizational(tlv))
       case .end:
         break
       }
@@ -78,6 +79,7 @@ public struct LLDPParser {
       systemCapabilities: systemCapabilities,
       enabledCapabilities: enabledCapabilities,
       managementAddresses: managementAddresses,
+      organizationalTLVs: organizationalTLVs,
       customTLVs: customTLVs
     )
   }
@@ -174,6 +176,16 @@ public struct LLDPParser {
       interfaceNumber: interfaceNumber,
       oid: oidString
     )
+  }
+
+  private func decodeOrganizational(_ tlv: LLDPTLV) throws -> LLDPOrganizationalTLV {
+    guard tlv.rawValue.count >= 4 else {
+      throw LLDPError.malformedTLV(type: tlv.type)
+    }
+    let oui = UInt32(tlv.rawValue[0]) << 16 | UInt32(tlv.rawValue[1]) << 8 | UInt32(tlv.rawValue[2])
+    let subtype = tlv.rawValue[3]
+    let payload = Data(tlv.rawValue.dropFirst(4))
+    return LLDPOrganizationalTLV(oui: oui, subtype: subtype, payload: payload)
   }
 
   private func decodeString(_ bytes: Data) -> String {

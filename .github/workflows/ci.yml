@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint-build-test:
+    name: Lint, Build, Test (macOS)
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.4'
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Lint formatting
+        run: Scripts/lint.sh
+
+      - name: Build
+        run: swift build --build-tests --configuration debug
+
+      - name: Run tests with coverage
+        run: Scripts/test.sh
+
+      - name: Export lcov report
+        run: |
+          set -euo pipefail
+          COVERAGE_DIR=.build/debug/codecov
+          PROF_DATA=$(find "$COVERAGE_DIR" -name '*.profdata' -maxdepth 1 -print -quit)
+          if [[ -z "${PROF_DATA:-}" ]]; then
+            echo "profdata not found" >&2
+            exit 1
+          fi
+          TEST_BUNDLE=.build/debug/SwiftLLDPPackageTests.xctest/Contents/MacOS/SwiftLLDPPackageTests
+          xcrun llvm-cov export \
+            --format=lcov \
+            --instr-profile "$PROF_DATA" \
+            "$TEST_BUNDLE" > coverage.lcov
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage.lcov
+          if-no-files-found: error
+
+  docc:
+    name: Build DocC
+    runs-on: macos-14
+    needs: lint-build-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.4'
+
+      - name: Generate DocC archive
+        run: swift package generate-documentation --target SwiftLLDP --output-path docc-archive --transform-for-static-hosting --hosting-base-path SwiftLLDP
+
+      - name: Upload DocC archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftlldp-docc
+          path: docc-archive
+          if-no-files-found: error

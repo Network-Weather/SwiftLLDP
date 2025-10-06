@@ -3,6 +3,7 @@ import Foundation
 import SwiftLLDP
 
 @main
+/// Entry point for the `swift-lldp` command-line interface.
 struct SwiftLLDPCommand: ParsableCommand {
   static let configuration = CommandConfiguration(
     commandName: "swift-lldp",
@@ -14,8 +15,8 @@ struct SwiftLLDPCommand: ParsableCommand {
   @Option(name: [.short, .long], help: "Interface name to monitor (for example: en0)")
   var interface: String
 
-  @Option(name: [.short, .customLong("duration")], help: "Capture window in seconds (default: 3)")
-  var durationInSeconds: Double = 3
+  @Option(name: [.short, .customLong("duration")], help: "Capture window in seconds (default: 60)")
+  var durationInSeconds: Double = 60
 
   @Option(name: .shortAndLong, help: "Maximum number of neighbors to return")
   var limit: Int?
@@ -88,6 +89,26 @@ struct SwiftLLDPCommand: ParsableCommand {
           print(line)
         }
       }
+      if !neighbor.organizationalTLVs.isEmpty {
+        print("  Organizational TLVs:")
+        for tlv in neighbor.organizationalTLVs {
+          let payload = tlv.decoded
+          if let med = payload.med {
+            print("    - \(med.summary)")
+            for detail in describe(med: med) {
+              print("      \(detail)")
+            }
+          } else if let text = payload.text {
+            print("    - \(payload.summary)")
+            print("      \(text)")
+          } else if let hex = payload.hexData {
+            print("    - \(payload.summary)")
+            print("      hex=" + hex)
+          } else {
+            print("    - \(payload.summary)")
+          }
+        }
+      }
       if !neighbor.customTLVs.isEmpty {
         print("  Custom TLVs: \(neighbor.customTLVs.count)")
       }
@@ -120,6 +141,46 @@ struct SwiftLLDPCommand: ParsableCommand {
     if capabilities.contains(.svlanBridge) { descriptors.append("svlan-bridge") }
     if capabilities.contains(.twoPortMacRelay) { descriptors.append("two-port-mac-relay") }
     return descriptors.joined(separator: ", ")
+  }
+
+  private func describe(med: LLDPMEDExtension) -> [String] {
+    switch med.kind {
+    case .capabilities:
+      guard let capabilities = med.capabilities else { return [] }
+      var lines: [String] = []
+      let flags = capabilities.flags.descriptions
+      if !flags.isEmpty {
+        lines.append("Capabilities: " + flags.joined(separator: ", "))
+      }
+      lines.append("Device Type: " + capabilities.deviceType.description)
+      return lines
+    case .extendedPower:
+      guard let power = med.extendedPower else { return [] }
+      var lines: [String] = [
+        "Power Type: " + power.powerType.description,
+        "Power Source: " + power.powerSource.description,
+        "Power Priority: " + power.powerPriority.description,
+        String(format: "Power: %.1f W", power.powerValueWatts),
+      ]
+      if let poe = power.inferredPoEStandard {
+        lines.append("PoE Standard: " + poe)
+      }
+      return lines
+    case .hardwareRevision, .firmwareRevision, .softwareRevision, .serialNumber, .manufacturerName,
+      .modelName, .assetID:
+      if let text = med.text, !text.isEmpty {
+        return [text]
+      }
+      if let hex = med.binaryHex {
+        return ["hex=" + hex]
+      }
+      return []
+    case .networkPolicy, .locationIdentification, .other:
+      if let hex = med.binaryHex {
+        return ["hex=" + hex]
+      }
+      return []
+    }
   }
 
   enum OutputFormat: String, ExpressibleByArgument {

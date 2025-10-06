@@ -1,19 +1,32 @@
 # ``SwiftLLDP``
 
 Discover LLDP peers on macOS interfaces and decode them into structured,
-human-friendly data.
+human-friendly data ready for automation.
 
 ## Overview
 
 `SwiftLLDP` offers both a Swift library and a CLI tooling layer. The library
 exposes types for LLDP TLVs, neighbor summaries, and the capture pipeline that
-uses libpcap under the hood.
+uses libpcap under the hood. You can embed the library in your own Swift code or
+install the `swift-lldp` executable to inspect peers from the terminal.
 
-The key entry points are:
+```swift
+import SwiftLLDP
 
-- ``LLDPClient`` for high level capture or payload decoding.
-- ``LLDPCaptureService`` for fine-grained control over pcap configuration.
-- ``LLDPParser`` for translating raw TLV payloads into ``LLDPNeighbor`` values.
+let client = LLDPClient()
+let neighbors = try client.discover(on: "en0", duration: 60)
+
+neighbors.forEach { neighbor in
+  print(neighbor.systemName ?? "Unknown neighbor")
+}
+```
+
+The command-line interface provides the same decoding pipeline with formatted
+output or JSON for automation:
+
+```bash
+swift run swift-lldp --interface en0 --format json
+```
 
 ## Topics
 
@@ -21,6 +34,7 @@ The key entry points are:
 
 - ``LLDPClient``
 - ``LLDPParser``
+- ``SwiftLLDPCommand``
 
 ### Capture
 
@@ -34,3 +48,5 @@ The key entry points are:
 - ``LLDPPortID``
 - ``LLDPManagementAddress``
 - ``LLDPCapabilities``
+- ``LLDPOrganizationalTLV``
+- ``LLDPMEDExtension``
